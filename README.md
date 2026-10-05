@@ -1,6 +1,12 @@
 # LifeLink
 
-LifeLink is a responsive, frontend-only demonstration dashboard for a regional emergency response network. It uses illustrative sample data; it does not connect to live emergency, weather, location, or dispatch services.
+LifeLink is a responsive frontend demonstration of **NE LogiShield**, an emergency response, incident-reporting, location-intelligence, and logistics concept for Northeast India.
+
+The UI includes Dashboard, Intelligence, Emergency, Report, and Community sections. It uses browser geolocation, an interactive OpenStreetMap street map, an Esri satellite imagery layer, and current weather from the public Open-Meteo API. Reports and optional resized photos are stored in browser localStorage and remain on that device.
+
+## Demo and emergency-service limitations
+
+Incident and response-resource markers are illustrative sample data. Community reports are local to the browser and are not shared with other users or authorities. The five-second SOS hold opens a demo confirmation screen only; it does **not** send an alert or location. Use the direct India emergency call link to call 112 in a real emergency. Emergency phone-number availability can vary by state and network.
 
 ## Run locally
 
@@ -11,14 +17,8 @@ npm ci
 npm run dev
 ```
 
-Create and verify a production build with `npm run build`.
+Vite listens on `0.0.0.0:5175` so it can be opened from another device on the same LAN. Build with `npm run build`.
 
-## Publish on GitHub Pages
+## GitHub Pages
 
-The included GitHub Actions workflow builds the site and deploys it to GitHub Pages whenever changes are pushed to `main`.
-
-1. In the repository, open **Settings → Pages**.
-2. Set **Build and deployment → Source** to **GitHub Actions**.
-3. Push the project files to the `main` branch and check the **Actions** tab for the deployment result.
-
-For this repository, the published URL will be `https://vasistasai.github.io/Life-link/` once the deployment succeeds.
+The GitHub Actions workflow builds and deploys the site from `main`. In the repository, set **Settings → Pages → Build and deployment → Source** to **GitHub Actions**. The project site is published at `https://vasistasai.github.io/Life-link/` after a successful workflow.
