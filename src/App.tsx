@@ -104,28 +104,6 @@ function readReports(): Incident[] {
     console.warn('Saved LifeLink reports could not be read.', error)
     return []
   }
-
-  async function continueAsGuest() {
-    setAuthBusy(true)
-    setAuthError('')
-    try {
-      setAuthSession(await signInAsGuest())
-    } catch (error) {
-      console.error('Guest sign-in failed.', error)
-      setAuthError(error instanceof Error ? error.message : 'Guest access could not be started.')
-    } finally {
-      setAuthBusy(false)
-    }
-  }
-
-  function leaveAccount() {
-    signOut()
-    setAuthSession(null)
-    setPresenceTree({})
-    setPresenceStatus('offline')
-    setActivePage('Dashboard')
-    setAuthError('')
-  }
 }
 
 function formatCoordinates(lat: number, lon: number) {
@@ -333,6 +311,28 @@ function App() {
     setToast(message)
     if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current)
     toastTimerRef.current = window.setTimeout(() => setToast(''), 3200)
+  }
+
+  async function continueAsGuest() {
+    setAuthBusy(true)
+    setAuthError('')
+    try {
+      setAuthSession(await signInAsGuest())
+    } catch (error) {
+      console.error('Guest sign-in failed.', error)
+      setAuthError(error instanceof Error ? error.message : 'Guest access could not be started.')
+    } finally {
+      setAuthBusy(false)
+    }
+  }
+
+  function leaveAccount() {
+    signOut()
+    setAuthSession(null)
+    setPresenceTree({})
+    setPresenceStatus('offline')
+    setActivePage('Dashboard')
+    setAuthError('')
   }
 
   useEffect(() => () => {
