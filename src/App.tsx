@@ -14,6 +14,7 @@ import {
   HeartPulse,
   Layers,
   LifeBuoy,
+  LogOut,
   MapPin,
   Menu,
   Navigation,
@@ -30,6 +31,26 @@ import * as L from 'leaflet'
 import type { LucideIcon } from 'lucide-react'
 import { emergencyServices, regions, regionalHospitals, sampleIncidents } from './data/demo'
 import type { Incident, MapLocation, WeatherData } from './types'
+import {
+  clearAuthSession,
+  getGoogleClientId,
+  hasFirebaseConfig,
+  hasGoogleConfig,
+  hasPresenceConfig,
+  isAdminSession,
+  isLocalSession,
+  makePresenceSession,
+  refreshSession,
+  removePresenceEntry,
+  restoreSession,
+  signInAsGuest,
+  signInWithGoogleCredential,
+  signOut,
+  subscribeToPresence,
+  writePresence,
+  deletePresence,
+} from './auth'
+import type { AuthSession, PresenceSession, PresenceTree } from './auth'
 import './App.css'
 
 const STORAGE_KEY = 'lifelink.community-reports.v1'
@@ -82,6 +103,28 @@ function readReports(): Incident[] {
   } catch (error) {
     console.warn('Saved LifeLink reports could not be read.', error)
     return []
+  }
+
+  async function continueAsGuest() {
+    setAuthBusy(true)
+    setAuthError('')
+    try {
+      setAuthSession(await signInAsGuest())
+    } catch (error) {
+      console.error('Guest sign-in failed.', error)
+      setAuthError(error instanceof Error ? error.message : 'Guest access could not be started.')
+    } finally {
+      setAuthBusy(false)
+    }
+  }
+
+  function leaveAccount() {
+    signOut()
+    setAuthSession(null)
+    setPresenceTree({})
+    setPresenceStatus('offline')
+    setActivePage('Dashboard')
+    setAuthError('')
   }
 }
 
@@ -235,6 +278,15 @@ function MapView({
 }
 
 function App() {
+  const [authSession, setAuthSession] = useState<AuthSession | null>(restoreSession)
+  const [authError, setAuthError] = useState('')
+  const [authBusy, setAuthBusy] = useState(false)
+  const [presenceTree, setPresenceTree] = useState<PresenceTree>({})
+  const [presenceStatus, setPresenceStatus] = useState<'connected' | 'reconnecting' | 'error' | 'offline'>('offline')
+  const [presenceError, setPresenceError] = useState('')
+  const pruningPresenceRef = useRef(new Set<string>())
+  const googleButtonRef = useRef<HTMLDivElement>(null)
+  const googleCredentialHandler = useRef<(credential: string) => void>(() => {})
   const [activePage, setActivePage] = useState<Page>('Dashboard')
   const [reports, setReports] = useState<Incident[]>(readReports)
   const [query, setQuery] = useState('')
@@ -257,6 +309,18 @@ function App() {
   const holdTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
+  googleCredentialHandler.current = (credential) => {
+    setAuthBusy(true)
+    setAuthError('')
+    void signInWithGoogleCredential(credential)
+      .then(setAuthSession)
+      .catch((error: unknown) => {
+        console.error('Google sign-in failed.', error)
+        setAuthError(error instanceof Error ? error.message : 'Google sign-in could not be completed.')
+      })
+      .finally(() => setAuthBusy(false))
+  }
+
   const incidents = useMemo(() => [...reports, ...sampleIncidents], [reports])
   const filteredIncidents = useMemo(
     () => incidents.filter((incident) =>
@@ -275,6 +339,130 @@ function App() {
     if (holdTimerRef.current) window.clearInterval(holdTimerRef.current)
     if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current)
   }, [])
+
+  useEffect(() => {
+    if (authSession || !hasGoogleConfig || !googleButtonRef.current) return
+    let cancelled = false
+    const renderGoogleButton = () => {
+      if (cancelled || !googleButtonRef.current || !window.google?.accounts?.id) return
+      window.google.accounts.id.initialize({
+        client_id: getGoogleClientId(),
+        callback: ({ credential }) => googleCredentialHandler.current(credential),
+      })
+      window.google.accounts.id.renderButton(googleButtonRef.current, {
+        theme: 'outline',
+        size: 'large',
+        shape: 'rectangular',
+        text: 'continue_with',
+        width: Math.min(320, Math.floor(googleButtonRef.current.clientWidth)),
+        logo_alignment: 'left',
+      })
+    }
+    const script = document.getElementById('google-identity-services') as HTMLScriptElement | null
+    if (window.google?.accounts?.id) {
+      renderGoogleButton()
+    } else if (script) {
+      script.addEventListener('load', renderGoogleButton, { once: true })
+    } else {
+      const googleScript = document.createElement('script')
+      googleScript.id = 'google-identity-services'
+      googleScript.src = 'https://accounts.google.com/gsi/client'
+      googleScript.async = true
+      googleScript.defer = true
+      googleScript.addEventListener('load', renderGoogleButton, { once: true })
+      googleScript.addEventListener('error', () => {
+        if (!cancelled) setAuthError('Google sign-in could not load. Check your connection and try again.')
+      }, { once: true })
+      document.head.append(googleScript)
+    }
+    return () => {
+      cancelled = true
+    }
+  }, [authSession])
+
+  useEffect(() => {
+    if (!authSession?.refreshToken) return
+    let active = true
+    const refresh = () => {
+      void refreshSession(authSession).then((session) => {
+        if (!active) return
+        setPresenceError('')
+        if (session !== authSession) setAuthSession(session)
+      }).catch((error: unknown) => {
+        if (!active) return
+        console.error('The saved sign-in session could not be refreshed.', error)
+        const message = error instanceof Error ? error.message : ''
+        if (/INVALID_REFRESH_TOKEN|TOKEN_EXPIRED|USER_DISABLED|USER_NOT_FOUND/.test(message)) {
+          clearAuthSession()
+          setAuthSession(null)
+          setAuthError('Your sign-in session expired. Please sign in again.')
+        } else {
+          setPresenceError('Session renewal failed. Check your connection; LifeLink will retry automatically.')
+        }
+      })
+    }
+    refresh()
+    const timer = window.setInterval(refresh, 60 * 1000)
+    return () => {
+      active = false
+      window.clearInterval(timer)
+    }
+  }, [authSession])
+
+  useEffect(() => {
+    if (!authSession?.idToken || isLocalSession(authSession) || !hasFirebaseConfig) {
+      setPresenceStatus('offline')
+      setPresenceTree({})
+      return
+    }
+    let active = true
+    const presence: PresenceSession = makePresenceSession(authSession)
+    setPresenceError('')
+    const heartbeat = () => {
+      void writePresence(authSession, presence)
+        .then(() => setPresenceError(''))
+        .catch((error: unknown) => {
+          if (!active) return
+          console.error('Could not publish online status.', error)
+          setPresenceError('Online status could not be saved. Check your Realtime Database rules.')
+        })
+    }
+    heartbeat()
+    const heartbeatTimer = window.setInterval(heartbeat, 30 * 1000)
+    const removePresence = () => deletePresence(authSession, presence)
+    window.addEventListener('pagehide', removePresence)
+    let unsubscribe = () => {}
+    if (isAdminSession(authSession) && hasPresenceConfig) {
+      setPresenceStatus('reconnecting')
+      unsubscribe = subscribeToPresence(
+        authSession.idToken,
+        (tree) => {
+          setPresenceTree(tree)
+          const now = Date.now()
+          Object.entries(tree).forEach(([uid, sessions]) => {
+            Object.values(sessions).forEach((entry) => {
+              if (entry.online && now - entry.lastSeen <= 75_000) return
+              const key = `${uid}/${entry.sessionId}`
+              if (pruningPresenceRef.current.has(key)) return
+              pruningPresenceRef.current.add(key)
+              void removePresenceEntry(authSession, uid, entry.sessionId).catch((error: unknown) => {
+                console.warn('A stale online session could not be removed.', error)
+                setPresenceError('A stale online session could not be removed. Check the admin database rules.')
+              })
+            })
+          })
+        },
+        setPresenceStatus,
+      )
+    }
+    return () => {
+      active = false
+      window.clearInterval(heartbeatTimer)
+      window.removeEventListener('pagehide', removePresence)
+      unsubscribe()
+      removePresence()
+    }
+  }, [authSession])
 
   useEffect(() => {
     const refreshTimer = window.setInterval(() => setWeatherRefresh((current) => current + 1), 15 * 60 * 1000)
@@ -475,7 +663,7 @@ function App() {
   }
 
   const pageTitle: Record<Page, string> = {
-    Dashboard: 'Good morning, Aisha',
+    Dashboard: `Welcome, ${authSession?.displayName ?? 'friend'}`,
     Intelligence: 'Location intelligence',
     Emergency: 'Emergency services',
     Report: 'Report an incident',
@@ -490,6 +678,17 @@ function App() {
   }
 
   const onSosPointerDown = (event: PointerEvent<HTMLButtonElement>) => startSosHold(event)
+
+  if (!authSession) {
+    return (
+      <SignInScreen
+        buttonRef={googleButtonRef}
+        error={authError}
+        busy={authBusy}
+        onGuest={() => void continueAsGuest()}
+      />
+    )
+  }
 
   return (
     <div className="app-shell">
@@ -514,10 +713,12 @@ function App() {
           ))}
         </nav>
         <div className="sidebar-bottom">
-          <div className="on-call-card"><span className="on-call-icon"><ShieldCheck size={17} /></span><div><strong>Demo environment</strong><small>Sample response data</small></div><span className="demo-status-dot" /></div>
-          <button className="profile" onClick={() => notify('LifeLink SIH 2026 demo workspace')}>
-            <span className="profile-avatar">AS</span><span className="profile-copy"><strong>Aisha Sharma</strong><small>Regional coordinator · Demo</small></span>
-          </button>
+          <div className="on-call-card"><span className="on-call-icon"><ShieldCheck size={17} /></span><div><strong>Demo environment</strong><small>{isLocalSession(authSession) ? 'Local-only guest session' : 'Sample response data'}</small></div><span className="demo-status-dot" /></div>
+          <div className="profile">
+            <span className="profile-avatar">{authSession.displayName.slice(0, 2).toUpperCase()}</span>
+            <span className="profile-copy"><strong>{authSession.displayName}</strong><small>{authSession.email ?? (isLocalSession(authSession) ? 'Local guest ID' : 'Guest account')}</small></span>
+            <button className="sign-out-button" onClick={leaveAccount} aria-label="Sign out" title="Sign out"><LogOut size={15} /></button>
+          </div>
         </div>
       </aside>
       {mobileNavOpen && <button className="mobile-backdrop" onClick={() => setMobileNavOpen(false)} aria-label="Close navigation" />}
@@ -532,7 +733,7 @@ function App() {
               <button className="icon-button notification-button" onClick={() => setNotificationsOpen((open) => !open)} aria-label="Notifications"><Bell size={18} /><span className="notification-dot" /></button>
               {notificationsOpen && <div className="notification-popover"><strong>Regional updates</strong><p><span className="notification-dot-inline" /> Sample incident markers are illustrative.</p><p><span className="notification-dot-inline muted" /> Weather updates use a public forecast API.</p></div>}
             </div>
-            <span className="topbar-divider" /><span className="today-label demo-label"><span className="demo-status-dot" /> Demo workspace</span>
+            <span className="topbar-divider" /><span className="today-label demo-label"><span className="demo-status-dot" /> {isLocalSession(authSession) ? 'Local guest' : 'Demo workspace'}</span>
           </div>
         </header>
 
@@ -541,6 +742,7 @@ function App() {
             <div><div className="eyebrow"><span className="eyebrow-line" /> NORTHEAST INDIA <span className="eyebrow-separator">·</span> 8 STATES</div><h1>{pageTitle[activePage]}<span className="wave">✳</span></h1><p className="page-subtitle">{pageDescription[activePage]}</p></div>
             {activePage !== 'Report' && <button className="primary-button" onClick={() => changePage('Report')}><Plus size={17} /> Report an incident</button>}
           </section>
+          {presenceError && <p className="presence-alert" role="status">{presenceError}</p>}
 
           {activePage === 'Dashboard' && (
             <>
@@ -559,6 +761,14 @@ function App() {
                 <SosCard state={sosState} countdown={sosCountdown} start={onSosPointerDown} cancel={cancelSosHold} begin={beginSosHold} />
               </section>
               <EmergencyStrip onOpen={() => changePage('Emergency')} />
+              {isAdminSession(authSession) && (
+                <OnlineVisitorsPanel
+                  tree={presenceTree}
+                  status={presenceStatus}
+                  message={presenceError}
+                  configured={hasPresenceConfig}
+                />
+              )}
             </>
           )}
 
@@ -609,6 +819,110 @@ function App() {
       {sosState === 'active' && <SosModal location={sosLocation} onClose={() => setSosState('idle')} />}
       {toast && <div className="toast" role="status"><Check size={16} /> {toast}</div>}
     </div>
+  )
+}
+
+function SignInScreen({
+  buttonRef,
+  error,
+  busy,
+  onGuest,
+}: {
+  buttonRef: { current: HTMLDivElement | null }
+  error: string
+  busy: boolean
+  onGuest: () => void
+}) {
+  return (
+    <main className="auth-screen">
+      <section className="auth-card">
+        <a className="brand auth-brand" href="#signin" aria-label="LifeLink">
+          <span className="brand-mark"><LifeBuoy size={23} strokeWidth={2.4} /></span>
+          <span className="brand-name">life<span>link</span><small>NORTHEAST RESPONSE</small></span>
+        </a>
+        <div className="auth-orbit" aria-hidden="true"><span /><span /><LifeBuoy size={31} /></div>
+        <div className="panel-kicker">NORTHEAST INDIA · RESPONSE NETWORK</div>
+        <h1>Help starts with being connected.</h1>
+        <p className="auth-intro">Sign in to explore regional intelligence, share community reports, and reach emergency resources.</p>
+        {hasGoogleConfig ? (
+          <div className={`google-button-wrap ${busy ? 'auth-busy' : ''}`} ref={buttonRef} />
+        ) : (
+          <div className="auth-setup-note"><ShieldCheck size={17} /><span>Google sign-in becomes available when this site is connected to its Firebase project.</span></div>
+        )}
+        <div className="auth-separator"><span>OR</span></div>
+        <button className="guest-button" onClick={onGuest} disabled={busy}>
+          {busy ? <span className="auth-spinner" /> : <Users size={17} />}
+          Continue as a guest
+        </button>
+        <p className="guest-explanation">
+          {hasFirebaseConfig
+            ? 'A temporary guest account lets you use the app immediately.'
+            : 'Guest mode works now on this browser. Cross-device accounts need Firebase setup.'}
+        </p>
+        {error && <p className="auth-error" role="alert">{error}</p>}
+        <div className="auth-footnote"><ShieldCheck size={14} /> LifeLink is a presentation demo. SOS does not dispatch responders.</div>
+      </section>
+    </main>
+  )
+}
+
+function OnlineVisitorsPanel({
+  tree,
+  status,
+  message,
+  configured,
+}: {
+  tree: PresenceTree
+  status: 'connected' | 'reconnecting' | 'error' | 'offline'
+  message: string
+  configured: boolean
+}) {
+  const [, setClock] = useState(Date.now())
+  useEffect(() => {
+    const timer = window.setInterval(() => setClock(Date.now()), 15 * 1000)
+    return () => window.clearInterval(timer)
+  }, [])
+
+  const now = Date.now()
+  const visitorsByUid = new Map<string, PresenceSession>()
+  Object.entries(tree).forEach(([uid, sessions]) => {
+    Object.values(sessions)
+      .filter((session) => session.online && now - session.lastSeen < 75_000)
+      .sort((first, second) => second.lastSeen - first.lastSeen)
+      .slice(0, 1)
+      .forEach((session) => visitorsByUid.set(uid, session))
+  })
+  const visitors = [...visitorsByUid.values()]
+    .sort((first, second) => second.lastSeen - first.lastSeen)
+
+  return (
+    <section className="panel visitors-panel">
+      <div className="panel-heading">
+        <div>
+          <div className="panel-kicker">ADMIN VIEW · FIREBASE REALTIME DATABASE</div>
+          <h2>Active visitors <span className={`visitor-connection ${status}`}><span /> {status === 'connected' ? 'LIVE' : status === 'error' ? 'CHECK ACCESS' : 'CONNECTING'}</span></h2>
+        </div>
+        <div className="visitor-count"><Users size={15} /> {visitors.length}</div>
+      </div>
+      {!configured ? (
+        <p className="visitor-note">Add the Firebase database URL and admin email to this site’s build configuration to enable presence.</p>
+      ) : status === 'error' ? (
+        <p className="visitor-note">Presence access was denied. Add your signed-in Firebase UID to <code>/admins</code> in the Realtime Database.</p>
+      ) : visitors.length === 0 ? (
+        <p className="visitor-note">No active visitors yet. Users appear after signing in with Firebase on another browser or device.</p>
+      ) : (
+        <div className="visitor-list">
+          {visitors.map((visitor) => (
+            <div className="visitor-row" key={`${visitor.uid}/${visitor.sessionId}`}>
+              <span className="visitor-avatar">{visitor.displayName.slice(0, 1).toUpperCase()}</span>
+              <span className="visitor-copy"><strong>{visitor.displayName}</strong><small>{visitor.email ?? 'Guest account'} · {visitor.kind === 'google' ? 'Google' : 'Guest'}</small></span>
+              <span className="visitor-online"><span /> Online</span>
+            </div>
+          ))}
+        </div>
+      )}
+      {message && <p className="visitor-warning">{message}</p>}
+    </section>
   )
 }
 
