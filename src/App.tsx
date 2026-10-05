@@ -25,7 +25,6 @@ import {
   Truck,
   Users,
   X,
-  Zap,
 } from 'lucide-react'
 import * as L from 'leaflet'
 import type { LucideIcon } from 'lucide-react'
@@ -539,7 +538,7 @@ function App() {
 
         <div className="page-content">
           <section className="welcome-row">
-            <div><div className="eyebrow"><span className="eyebrow-line" /> NORTHEAST INDIA <span className="eyebrow-separator">·</span> 8 STATES</div><h1>{pageTitle}<span className="wave">✳</span></h1><p className="page-subtitle">{pageDescription}</p></div>
+            <div><div className="eyebrow"><span className="eyebrow-line" /> NORTHEAST INDIA <span className="eyebrow-separator">·</span> 8 STATES</div><h1>{pageTitle[activePage]}<span className="wave">✳</span></h1><p className="page-subtitle">{pageDescription[activePage]}</p></div>
             {activePage !== 'Report' && <button className="primary-button" onClick={() => changePage('Report')}><Plus size={17} /> Report an incident</button>}
           </section>
 
