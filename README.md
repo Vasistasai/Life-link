@@ -4,6 +4,8 @@ LifeLink is a responsive frontend demonstration of **NE LogiShield**, an emergen
 
 The UI includes Dashboard, Intelligence, Emergency, Report, and Community sections. It uses browser geolocation, an interactive OpenStreetMap street map, an Esri satellite imagery layer, and current weather from the public Open-Meteo API. Reports and optional resized photos are stored in browser localStorage and remain on that device.
 
+The map uses priority-coloured incident pins with type-specific symbols and a matching legend. Intelligence also has a clearly marked AI-insights roadmap preview; it is not connected to an AI model and does not generate guidance.
+
 ## Demo and emergency-service limitations
 
 Incident and response-resource markers are illustrative sample data. Community reports are local to the browser and are not shared with other users or authorities. The five-second SOS hold opens a demo confirmation screen only; it does **not** send an alert or location. Use the direct India emergency call link to call 112 in a real emergency. Emergency phone-number availability can vary by state and network.
