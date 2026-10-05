@@ -1,0 +1,25 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "admins": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": false
+      }
+    },
+    "presence": {
+      ".read": "auth != null && root.child('admins').child(auth.uid).val() === true",
+      "$uid": {
+        ".read": "auth != null && (auth.uid === $uid || root.child('admins').child(auth.uid).val() === true)",
+        "$sessionId": {
+          ".write": "auth != null && (auth.uid === $uid || root.child('admins').child(auth.uid).val() === true)",
+          ".validate": "newData.hasChildren(['uid', 'sessionId', 'displayName', 'kind', 'online', 'lastSeen']) && newData.child('uid').val() === auth.uid && newData.child('sessionId').val() === $sessionId && newData.child('displayName').isString() && (newData.child('email').isString() || newData.child('email').val() === null) && (newData.child('kind').val() === 'google' || newData.child('kind').val() === 'guest') && newData.child('online').val() === true && newData.child('lastSeen').isNumber()",
+          "$other": {
+            ".validate": false
+          }
+        }
+      }
+    }
+  }
+}
