@@ -257,11 +257,18 @@ function MapView({
         .addTo(markers)
     }
 
-    map.setView(
-      [location?.lat ?? selectedRegion.lat, location?.lon ?? selectedRegion.lon],
-      location ? 10 : expanded ? 7 : 6,
-      { animate: true },
-    )
+    if (location) {
+      map.setView([location.lat, location.lon], 10, { animate: true })
+    } else if (expanded) {
+      const points = [
+        selectedRegion,
+        ...incidents,
+        ...regionalHospitals,
+      ].map((point) => L.latLng(point.lat, point.lon))
+      map.fitBounds(L.latLngBounds(points).pad(0.12), { animate: true, maxZoom: 7 })
+    } else {
+      map.setView([selectedRegion.lat, selectedRegion.lon], 6, { animate: true })
+    }
   }, [incidents, location, selectedRegion, expanded])
 
   return <div className={`leaflet-map ${expanded ? 'leaflet-map-expanded' : ''}`} ref={elementRef} aria-label="Interactive map of Northeast India" role="application" />
