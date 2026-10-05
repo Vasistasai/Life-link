@@ -855,33 +855,72 @@ function SignInScreen({
 }) {
   return (
     <main className="auth-screen">
-      <section className="auth-card">
-        <a className="brand auth-brand" href="#signin" aria-label="LifeLink">
+      <div className="auth-atmosphere" aria-hidden="true" />
+      <header className="auth-topbar">
+        <a className="brand auth-brand" href="#signin" aria-label="LifeLink home">
           <span className="brand-mark"><LifeBuoy size={23} strokeWidth={2.4} /></span>
           <span className="brand-name">life<span>link</span><small>NORTHEAST RESPONSE</small></span>
         </a>
-        <div className="auth-orbit" aria-hidden="true"><span /><span /><LifeBuoy size={31} /></div>
-        <div className="panel-kicker">NORTHEAST INDIA · RESPONSE NETWORK</div>
-        <h1>Help starts with being connected.</h1>
-        <p className="auth-intro">Sign in to explore regional intelligence, share community reports, and reach emergency resources.</p>
-        {hasGoogleConfig ? (
-          <div className={`google-button-wrap ${busy ? 'auth-busy' : ''}`} ref={buttonRef} />
-        ) : (
-          <div className="auth-setup-note"><ShieldCheck size={17} /><span>Google sign-in becomes available when this site is connected to its Firebase project.</span></div>
-        )}
-        <div className="auth-separator"><span>OR</span></div>
-        <button className="guest-button" onClick={onGuest} disabled={busy}>
-          {busy ? <span className="auth-spinner" /> : <Users size={17} />}
-          Continue as a guest
-        </button>
-        <p className="guest-explanation">
-          {hasFirebaseConfig
-            ? 'A temporary guest account lets you use the app immediately.'
-            : 'Guest mode works now on this browser. Cross-device accounts need Firebase setup.'}
-        </p>
-        {error && <p className="auth-error" role="alert">{error}</p>}
-        <div className="auth-footnote"><ShieldCheck size={14} /> LifeLink is a presentation demo. SOS does not dispatch responders.</div>
-      </section>
+        <span className="auth-topbar-label"><span className="auth-live-dot" /> REGIONAL RESPONSE NETWORK <i>·</i> NE INDIA</span>
+      </header>
+      <div className="auth-layout">
+        <section className="auth-hero">
+          <div className="auth-eyebrow"><span className="auth-eyebrow-line" /> BUILT FOR THE MOMENTS THAT MATTER</div>
+          <h1>When every second matters,<br /><em>stay connected.</em></h1>
+          <p className="auth-hero-copy">A shared view of regional conditions, community reports and emergency resources across Northeast India.</p>
+          <div className="auth-map-card" aria-label="Illustrative regional response map">
+            <div className="auth-map-grid" />
+            <svg className="auth-map-lines" viewBox="0 0 740 320" preserveAspectRatio="none" aria-hidden="true">
+              <path d="M-25 242 C65 172 101 208 171 149 S279 164 340 105 S447 116 502 64 S625 90 759 14" />
+              <path d="M-20 279 C59 210 124 252 191 191 S297 204 363 147 S470 155 531 103 S643 130 766 54" />
+              <path d="M78 344 C149 260 152 221 220 206 S319 247 378 196 S452 184 489 153 S565 188 622 137 S701 126 761 108" />
+              <path d="M118 -20 C180 48 170 91 242 114 S339 87 382 139 S427 220 505 221 S620 207 765 267" />
+              <path d="M18 72 C106 103 131 73 208 87 S288 135 343 114 S416 54 479 77 S571 117 661 76" />
+            </svg>
+            <div className="auth-map-topline"><span><MapPin size={14} /> NORTHEAST INDIA</span><span className="auth-map-demo"><span /> DEMO MAP</span></div>
+            <div className="auth-map-place auth-place-assam">ASSAM <small>GUWAHATI</small></div>
+            <div className="auth-map-place auth-place-meghalaya">MEGHALAYA</div>
+            <div className="auth-map-place auth-place-nagaland">NAGALAND</div>
+            <div className="auth-map-place auth-place-manipur">MANIPUR</div>
+            <div className="auth-map-pin auth-pin-flood"><span>🌊</span></div>
+            <div className="auth-map-pin auth-pin-road"><span>🚧</span></div>
+            <div className="auth-map-pin auth-pin-medical"><span>⚕️</span></div>
+            <div className="auth-map-pin auth-pin-weather"><span>⛈️</span></div>
+            <div className="auth-map-alert"><span className="auth-alert-icon">🌧️</span><span><strong>Regional awareness</strong><small>Explore local conditions and alerts</small></span><span className="auth-alert-status"><i /> DEMO</span></div>
+            <div className="auth-map-coordinates">26.1445° N&nbsp;&nbsp; 91.7362° E</div>
+          </div>
+          <div className="auth-hero-stats">
+            <div><span className="auth-stat-icon"><MapPin size={16} /></span><span><strong>8 states</strong><small>One regional view</small></span></div>
+            <div><span className="auth-stat-icon"><CloudRain size={16} /></span><span><strong>Live conditions</strong><small>Weather via Open-Meteo</small></span></div>
+            <div><span className="auth-stat-icon auth-stat-sos"><Siren size={16} /></span><span><strong>Emergency ready</strong><small>Quick access to 112</small></span></div>
+          </div>
+          <div className="auth-hero-disclaimer"><ShieldCheck size={14} /> Presentation demo · Sample incidents · SOS does not dispatch responders</div>
+        </section>
+        <aside className="auth-panel">
+          <div className="auth-panel-top"><span className="auth-panel-icon"><LifeBuoy size={18} /></span><span className="auth-panel-badge"><ShieldCheck size={12} /> YOUR REGIONAL ACCESS</span></div>
+          <div className="auth-panel-kicker">WELCOME TO LIFELINK</div>
+          <h2>Let’s get you<br />connected.</h2>
+          <p className="auth-intro">Choose how you’d like to enter the response network.</p>
+          {hasGoogleConfig ? (
+            <div className={`google-button-wrap ${busy ? 'auth-busy' : ''}`} ref={buttonRef} />
+          ) : (
+            <div className="auth-setup-note"><ShieldCheck size={17} /><span>Google sign-in will appear here when the site’s Firebase project is configured.</span></div>
+          )}
+          <div className="auth-separator"><span>OR</span></div>
+          <button className="guest-button" onClick={onGuest} disabled={busy}>
+            {busy ? <span className="auth-spinner" /> : <Users size={17} />}
+            Continue as a guest <ArrowRight size={16} className="guest-arrow" />
+          </button>
+          <p className="guest-explanation">
+            {hasFirebaseConfig
+              ? 'A temporary guest account gets you started right away.'
+              : 'Instant access on this browser. Cross-device accounts need Firebase setup.'}
+          </p>
+          {error && <p className="auth-error" role="alert">{error}</p>}
+          <div className="auth-panel-foot"><ShieldCheck size={14} /><span>Your access stays in this browser unless you sign in with a configured account.</span></div>
+        </aside>
+      </div>
+      <footer className="auth-page-footer"><span>LifeLink · Northeast India response concept</span><span>Not an official emergency service <i>·</i> In an emergency, call <a href="tel:112">112</a></span></footer>
     </main>
   )
 }
