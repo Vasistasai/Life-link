@@ -93,8 +93,16 @@ h1 { margin-bottom: 5px; color: #21372d; font: 700 25px/1.3 'Manrope',sans-serif
 .leaflet-container .leaflet-control-attribution { font-size: 8px; }
 .leaflet-container .leaflet-popup-content-wrapper { border-radius: 8px; }
 .leaflet-map-marker-wrap { border: 0!important; background: transparent!important; }
-.lifelink-map-marker { position: absolute; top: 50%; left: 50%; width: 14px; height: 14px; border: 3px solid #fff; border-radius: 50%; background: var(--marker-color); box-shadow: 0 2px 8px #14271d55; transform: translate(-50%,-50%); }
-.lifelink-map-marker:after { position: absolute; inset: -7px; border: 1px solid var(--marker-color); border-radius: 50%; content: ''; opacity: .3; }
+.lifelink-map-marker { position: absolute; top: 50%; left: 50%; display: grid; width: 34px; height: 34px; place-items: center; border: 3px solid var(--marker-color); border-radius: 50%; color: #35483d; background: #fff; box-shadow: 0 2px 9px #14271d55; font: 17px/1 'Segoe UI Emoji','Apple Color Emoji',sans-serif; transform: translate(-50%,-50%); }
+.lifelink-map-marker:after { position: absolute; inset: -7px; border: 2px solid var(--marker-color); border-radius: 50%; content: ''; opacity: .34; pointer-events: none; }
+.lifelink-incident-marker { transition: transform .16s ease,box-shadow .16s ease; }
+.lifelink-incident-marker:hover { z-index: 2; box-shadow: 0 3px 14px #14271d66; transform: translate(-50%,-50%) scale(1.12); }
+.lifelink-hospital-marker { width: 30px; height: 30px; border-color: #397db0; font-size: 15px; }
+.lifelink-hospital-marker:after { border-color: #397db0; }
+.popup-priority { font-weight: 700; }
+.popup-high { color: #c84738; }
+.popup-medium { color: #a56c0e; }
+.popup-low { color: #28764f; }
 .lifelink-user-marker { position: absolute; top: 50%; left: 50%; width: 17px; height: 17px; border: 4px solid #fff; border-radius: 50%; background: #3d82e6; box-shadow: 0 0 0 7px #3d82e644,0 2px 8px #14271d55; transform: translate(-50%,-50%); }
 .map-top-tools { position: absolute; z-index: 5; top: 10px; right: 10px; display: flex; gap: 6px; }
 .map-tool,.map-mode-button { display: inline-flex; min-height: 29px; align-items: center; justify-content: center; gap: 6px; padding: 0 8px; border: 1px solid #e4eae5; border-radius: 6px; color: #526158; background: #ffffffed; box-shadow: 0 2px 5px #23332808; font-size: 8px; white-space: nowrap; }
@@ -103,8 +111,16 @@ h1 { margin-bottom: 5px; color: #21372d; font: 700 25px/1.3 'Manrope',sans-serif
 .map-footer { display: flex; min-height: 37px; align-items: center; justify-content: space-between; gap: 9px; color: #7c8980; font-size: 8px; }
 .map-footer>span { display: inline-flex; align-items: center; gap: 6px; }
 .map-footer button { display: inline-flex; align-items: center; gap: 5px; padding: 4px 0 4px 6px; border: 0; color: #337858; background: transparent; font-size: 8px; font-weight: 600; white-space: nowrap; }
-.map-footer .online-dot,.map-footer .legend-dot { width: 6px; height: 6px; border-radius: 50%; }
+.map-footer .online-dot,.map-footer .legend-dot { width: 8px; height: 8px; flex: 0 0 auto; border: 1px solid #ffffff; border-radius: 50%; box-shadow: 0 0 0 1px currentColor; }
+.map-footer .dot-high { color: #df6658; background: #df6658; }
+.map-footer .dot-medium { color: #d99a37; background: #d99a37; }
+.map-footer .dot-low { color: #478a6b; background: #478a6b; }
+.map-footer .dot-team { color: #478a6b; background: #478a6b; }
 .map-footer .dot-service { background: #397db0; }
+.map-footer .legend-emoji { font: 12px/1 'Segoe UI Emoji','Apple Color Emoji',sans-serif; }
+.intelligence-legend { min-height: 0; justify-content: flex-start; flex-wrap: wrap; gap: 9px 13px; padding: 11px 0 13px; }
+.intelligence-legend>span { gap: 6px; white-space: nowrap; }
+.intelligence-legend .map-attribution-note { flex-basis: 100%; white-space: normal; }
 .weather-panel { padding: 16px 16px 0; }
 .small-icon { width: 28px; height: 28px; border-color: transparent; }
 .weather-location { display: flex; align-items: center; gap: 6px; margin-top: 15px; color: #78867d; font-size: 9px; }
@@ -194,6 +210,16 @@ h1 { margin-bottom: 5px; color: #21372d; font: 700 25px/1.3 'Manrope',sans-serif
 .incidents-compact .incident-row { grid-template-columns: 29px minmax(70px,1fr) 49px; gap: 6px; }
 .incidents-compact .incident-time { display: none; }
 .intelligence-side .weather-panel { padding: 14px 12px 0; }
+.ai-preview { padding: 14px 13px 12px; overflow: hidden; background: linear-gradient(145deg,#fff 30%,#f7f4ff); }
+.ai-preview .panel-heading h2 { gap: 7px; }
+.ai-preview .panel-heading h2 svg { color: #8167b2; }
+.ai-status { flex: 0 0 auto; padding: 5px 7px; border: 1px solid #e6dff2; border-radius: 12px; color: #786398; background: #f5f1fb; font-size: 7px; font-weight: 700; letter-spacing: .45px; }
+.ai-preview-copy { margin: 10px 0 11px; color: #79847e; font-size: 9px; line-height: 1.55; }
+.ai-feature-list { display: grid; gap: 7px; }
+.ai-feature-list>span { display: flex; align-items: center; gap: 8px; color: #66746b; font-size: 8px; }
+.ai-feature-list>span>span { display: grid; width: 20px; height: 20px; flex: 0 0 auto; place-items: center; border-radius: 6px; color: #8066ad; background: #f1ecf9; font-size: 7px; font-weight: 700; }
+.ai-preview-foot { display: flex; align-items: center; gap: 6px; margin-top: 11px; padding-top: 9px; border-top: 1px solid #ece8f1; color: #8a8293; font-size: 7px; }
+.ai-preview-foot svg { color: #7b9a82; }
 .section-heading { margin: 22px 0 12px; }
 .section-heading h2 { margin-bottom: 4px; }
 .section-heading p { margin: 5px 0 0; color: #849087; font-size: 9px; }

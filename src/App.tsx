@@ -23,6 +23,7 @@ import {
   Search,
   ShieldCheck,
   Siren,
+  Sparkles,
   Truck,
   Users,
   X,
@@ -143,6 +144,17 @@ function timeAgo(iso: string) {
   return `${Math.floor(hours / 24)} days ago`
 }
 
+function incidentMarker(category: string) {
+  const value = category.toLowerCase()
+  if (value.includes('flood') || value.includes('water')) return '🌊'
+  if (value.includes('medical') || value.includes('health')) return '⚕️'
+  if (value.includes('fire')) return '🔥'
+  if (value.includes('transport') || value.includes('road')) return '🚧'
+  if (value.includes('weather') || value.includes('storm') || value.includes('rain')) return '⛈️'
+  if (value.includes('landslide') || value.includes('earthquake')) return '⛰️'
+  return '⚠️'
+}
+
 function MapView({
   location,
   selectedRegion,
@@ -212,21 +224,21 @@ function MapView({
       const color = incident.severity === 'High' ? '#df6658' : incident.severity === 'Medium' ? '#d99a37' : '#478a6b'
       const marker = L.divIcon({
         className: 'lifelink-map-marker-wrap',
-        html: `<span class="lifelink-map-marker" style="--marker-color:${color}"></span>`,
-        iconSize: [22, 22],
-        iconAnchor: [11, 11],
+        html: `<span class="lifelink-map-marker lifelink-incident-marker" style="--marker-color:${color}" aria-label="${escapeHtml(incident.severity)} priority ${escapeHtml(incident.category)}">${incidentMarker(incident.category)}</span>`,
+        iconSize: [38, 38],
+        iconAnchor: [19, 19],
       })
       L.marker([incident.lat, incident.lon], { icon: marker })
-        .bindPopup(`<strong>${escapeHtml(incident.title)}</strong><br>${escapeHtml(incident.location)}<br><small>${escapeHtml(incident.severity)} priority · ${incident.source === 'Community' ? 'Community report' : 'Demo marker'}</small>`)
+        .bindPopup(`<strong>${incidentMarker(incident.category)} ${escapeHtml(incident.title)}</strong><br>${escapeHtml(incident.location)}<br><small><span class="popup-priority popup-${incident.severity.toLowerCase()}">${escapeHtml(incident.severity)} priority</span> · ${escapeHtml(incident.category)} · ${incident.source === 'Community' ? 'Community report' : 'Demo marker'}</small>`)
         .addTo(markers)
     })
 
     regionalHospitals.forEach((hospital) => {
       const marker = L.divIcon({
         className: 'lifelink-map-marker-wrap',
-        html: '<span class="lifelink-map-marker" style="--marker-color:#397db0"></span>',
-        iconSize: [22, 22],
-        iconAnchor: [11, 11],
+        html: '<span class="lifelink-map-marker lifelink-hospital-marker" aria-label="Hospital">🏥</span>',
+        iconSize: [34, 34],
+        iconAnchor: [17, 17],
       })
       L.marker([hospital.lat, hospital.lon], { icon: marker })
         .bindPopup(`<strong>${escapeHtml(hospital.name)}</strong><br>${escapeHtml(hospital.city)}<br><small>Regional hospital · Confirm availability before travel</small>`)
@@ -782,13 +794,14 @@ function App() {
                   <span className="map-api-label"><span className="online-dot" /> Interactive map · OpenStreetMap</span>
                 </div>
                 <MapView location={location} selectedRegion={selectedRegion} incidents={incidents} satellite={satellite} expanded />
-                <div className="map-footer"><span><span className="legend-dot dot-high" /> High priority</span><span><span className="legend-dot dot-medium" /> Medium</span><span><span className="legend-dot dot-team" /> Community</span><span><span className="legend-dot dot-service" /> Hospitals</span><span className="map-attribution-note">Satellite imagery is not live video; incident pins are demo/community reports.</span></div>
+                <div className="map-footer intelligence-legend"><span><span className="legend-dot dot-high" /> High</span><span><span className="legend-dot dot-medium" /> Medium</span><span><span className="legend-dot dot-low" /> Low</span><span><span className="legend-emoji">🌊</span> Flood</span><span><span className="legend-emoji">⚕️</span> Medical</span><span><span className="legend-emoji">🚧</span> Road</span><span><span className="legend-emoji">⛈️</span> Weather</span><span><span className="legend-emoji">🏥</span> Hospital</span><span className="map-attribution-note">Pin border colour = priority · Emoji = incident type. Sample pins are illustrative.</span></div>
                 {locationMessage && <p className="location-message">{locationMessage}</p>}
               </div>
               <aside className="intelligence-side">
                 <div className="panel region-panel"><div className="panel-kicker">SELECTED REGION</div><h2>{location?.name ?? selectedRegion.name}</h2><p><MapPin size={14} /> {location ? formatCoordinates(location.lat, location.lon) : `${selectedRegion.state} · Northeast India`}</p><button className="outline-button" onClick={requestLocation}><Navigation size={15} /> Detect my location</button>{locationMessage && <div className="location-message">{locationMessage}</div>}</div>
                 <WeatherPanel weather={weather} state={weatherState} location={selectedRegion} refresh={() => setWeatherRefresh((current) => current + 1)} compact />
                 <IncidentList incidents={filteredIncidents.slice(0, 3)} title={`Reports nearby · ${filteredIncidents.length}`} onViewAll={() => changePage('Community')} compact />
+                <AiInsightsPreview />
               </aside>
             </section>
           )}
@@ -922,6 +935,27 @@ function OnlineVisitorsPanel({
         </div>
       )}
       {message && <p className="visitor-warning">{message}</p>}
+    </section>
+  )
+}
+
+function AiInsightsPreview() {
+  return (
+    <section className="panel ai-preview">
+      <div className="panel-heading">
+        <div>
+          <div className="panel-kicker">INTELLIGENCE ROADMAP</div>
+          <h2><Sparkles size={15} /> AI risk insights</h2>
+        </div>
+        <span className="ai-status">COMING SOON</span>
+      </div>
+      <p className="ai-preview-copy">AI-assisted analysis is planned for a future release. No model is connected yet.</p>
+      <div className="ai-feature-list">
+        <span><span>01</span> Emerging incident patterns</span>
+        <span><span>02</span> Regional risk summaries</span>
+        <span><span>03</span> Response recommendations</span>
+      </div>
+      <div className="ai-preview-foot"><ShieldCheck size={13} /> Not active · No AI-generated advice</div>
     </section>
   )
 }
