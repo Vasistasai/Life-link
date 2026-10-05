@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type FormEvent, type PointerEvent } from 'react'
+import { useEffect, useMemo, useRef, useState, type FormEvent, type PointerEvent, type ReactNode } from 'react'
 import {
   Activity,
   ArrowDownRight,
@@ -920,9 +920,108 @@ function SignInScreen({
           <div className="auth-panel-foot"><ShieldCheck size={14} /><span>Your access stays in this browser unless you sign in with a configured account.</span></div>
         </aside>
       </div>
+      <section className="auth-story" aria-labelledby="auth-story-title">
+        <ScrollReveal className="auth-story-heading">
+          <div className="auth-eyebrow"><span className="auth-eyebrow-line" /> A CLEARER VIEW WHEN CONDITIONS CHANGE</div>
+          <h2 id="auth-story-title">Built for the moments <em>after the alert.</em></h2>
+          <p>Explore how LifeLink brings regional context, local reports and emergency resources together.</p>
+        </ScrollReveal>
+        <div className="auth-disaster-grid">
+          <ScrollReveal className="auth-disaster-reveal">
+            <article className="auth-disaster-card">
+              <div className="hazard-scene hazard-flood" aria-hidden="true">
+                <span className="hazard-scene-label">RISING WATER</span>
+                <span className="hazard-rain" />
+                <span className="hazard-home">⌂</span>
+                <span className="hazard-wave hazard-wave-one" />
+                <span className="hazard-wave hazard-wave-two" />
+              </div>
+              <div className="auth-disaster-copy">
+                <span className="auth-disaster-kicker">FLOOD AWARENESS</span>
+                <h3>See the situation around you.</h3>
+                <p>Check the regional map and weather conditions, then use local reports to understand what may be changing nearby.</p>
+              </div>
+            </article>
+          </ScrollReveal>
+          <ScrollReveal className="auth-disaster-reveal">
+            <article className="auth-disaster-card">
+              <div className="hazard-scene hazard-storm" aria-hidden="true">
+                <span className="hazard-scene-label">SEVERE WEATHER</span>
+                <span className="storm-cloud storm-cloud-back" />
+                <span className="storm-cloud storm-cloud-front" />
+                <span className="storm-lightning" />
+                <span className="storm-rain storm-rain-one" />
+                <span className="storm-rain storm-rain-two" />
+              </div>
+              <div className="auth-disaster-copy">
+                <span className="auth-disaster-kicker">WEATHER CONTEXT</span>
+                <h3>Prepare with useful signals.</h3>
+                <p>LifeLink displays current weather data alongside community-submitted updates. Always verify urgent warnings with official sources.</p>
+              </div>
+            </article>
+          </ScrollReveal>
+          <ScrollReveal className="auth-disaster-reveal">
+            <article className="auth-disaster-card">
+              <div className="hazard-scene hazard-landslide" aria-hidden="true">
+                <span className="hazard-scene-label">SLOPE WATCH</span>
+                <span className="landslide-mountain landslide-mountain-back" />
+                <span className="landslide-mountain landslide-mountain-front" />
+                <span className="landslide-slide" />
+                <span className="landslide-road" />
+              </div>
+              <div className="auth-disaster-copy">
+                <span className="auth-disaster-kicker">COMMUNITY REPORTS</span>
+                <h3>Share what you notice.</h3>
+                <p>Submit a local report to keep useful information visible on this device and help people understand nearby conditions.</p>
+              </div>
+            </article>
+          </ScrollReveal>
+        </div>
+        <ScrollReveal className="auth-tools-reveal">
+          <div className="auth-tools-strip">
+            <div className="auth-tools-intro">
+              <span className="auth-disaster-kicker">ONE REGIONAL RESPONSE VIEW</span>
+              <h3>Awareness, made more connected.</h3>
+            </div>
+            <div className="auth-tool-item"><MapPin size={17} /><span><strong>Interactive map</strong><small>Explore regional context</small></span></div>
+            <div className="auth-tool-item"><CloudRain size={17} /><span><strong>Live weather</strong><small>Conditions via Open-Meteo</small></span></div>
+            <div className="auth-tool-item"><Phone size={17} /><span><strong>Emergency resources</strong><small>Quick access to 112</small></span></div>
+          </div>
+        </ScrollReveal>
+        <p className="auth-story-note"><ShieldCheck size={13} /> LifeLink is a presentation concept. Map incidents are illustrative, reports are local to this browser, and SOS does not dispatch responders.</p>
+      </section>
       <footer className="auth-page-footer"><span>LifeLink · Northeast India response concept</span><span>Not an official emergency service <i>·</i> In an emergency, call <a href="tel:112">112</a></span></footer>
     </main>
   )
+}
+
+function ScrollReveal({ children, className }: { children: ReactNode; className: string }) {
+  const revealRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const element = revealRef.current
+    if (!element) return
+
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches || !('IntersectionObserver' in window)) {
+      element.classList.add('is-visible')
+      return
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          element.classList.add('is-visible')
+          observer.unobserve(element)
+        }
+      },
+      { threshold: 0.16, rootMargin: '0px 0px -24px 0px' },
+    )
+
+    observer.observe(element)
+    return () => observer.disconnect()
+  }, [])
+
+  return <div ref={revealRef} className={`scroll-reveal ${className}`}>{children}</div>
 }
 
 function OnlineVisitorsPanel({
