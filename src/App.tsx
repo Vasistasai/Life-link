@@ -484,7 +484,7 @@ function App() {
   const pageDescription: Record<Page, string> = {
     Dashboard: 'Regional response at a glance for Northeast India.',
     Intelligence: 'Explore response activity and field conditions across the eight northeastern states.',
-    Emergency: 'Verified emergency numbers and the LifeLink SOS demo.',
+    Emergency: 'Public emergency numbers and the LifeLink SOS demo.',
     Report: 'Share a local incident with your community.',
     Community: 'Community reports saved on this device.',
   }
@@ -572,7 +572,7 @@ function App() {
                   <span className="map-api-label"><span className="online-dot" /> Interactive map · OpenStreetMap</span>
                 </div>
                 <MapView location={location} selectedRegion={selectedRegion} incidents={incidents} satellite={satellite} expanded />
-                <div className="map-footer"><span><span className="legend-dot dot-high" /> High priority</span><span><span className="legend-dot dot-medium" /> Medium</span><span><span className="legend-dot dot-team" /> Community</span><span className="map-attribution-note">Satellite imagery is not live video; incident pins are demo/community reports.</span></div>
+                <div className="map-footer"><span><span className="legend-dot dot-high" /> High priority</span><span><span className="legend-dot dot-medium" /> Medium</span><span><span className="legend-dot dot-team" /> Community</span><span><span className="legend-dot dot-service" /> Hospitals</span><span className="map-attribution-note">Satellite imagery is not live video; incident pins are demo/community reports.</span></div>
                 {locationMessage && <p className="location-message">{locationMessage}</p>}
               </div>
               <aside className="intelligence-side">
